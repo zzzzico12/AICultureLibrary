@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI文化アーカイブラリー</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-mark"></div>
+        <span class="logo-text">AI文化アーカイブラリー</span>
+      </div>
+      <div class="header-right">
+        <div class="user-section">
+          <input type="text" id="userIdInput" placeholder="ユーザーID" />
+          <button id="loginBtn" class="btn-primary">ログイン</button>
+        </div>
+        <div id="pointsDisplay" class="points-display hidden">
+          <span id="pointsValue">0</span>
+          <span class="points-unit">pt</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- 左: スポット一覧 -->
+    <aside class="sidebar" id="panel-spots">
+      <p class="panel-label">文化スポット</p>
+      <button class="btn-register-spot" id="sidebarRegisterBtn">+ 新しいスポットを登録する</button>
+      <div id="spotList" class="spot-list">
+        <p class="loading-text">読み込み中...</p>
+      </div>
+    </aside>
+
+    <!-- 中央: マップ -->
+    <section class="map-section" id="panel-map">
+      <div id="map"></div>
+    </section>
+
+    <!-- 右: タブパネル -->
+    <aside class="right-panel" id="panel-right">
+
+      <div class="right-tabs">
+        <button class="rtab active" data-rtab="upload">撮影</button>
+        <button class="rtab" data-rtab="album">アルバム</button>
+        <button class="rtab" data-rtab="register">登録</button>
+        <button class="rtab" data-rtab="route">ルート</button>
+      </div>
+
+      <!-- 撮影パネル -->
+      <div id="rpanel-upload" class="rpanel active">
+        <div class="upload-area" id="uploadArea">
+          <input type="file" id="imageInput" accept="image/*" hidden />
+          <div class="upload-placeholder" id="uploadPlaceholder">
+            <div class="upload-plus">+</div>
+            <p class="upload-main-text">写真を選択してください</p>
+            <p class="upload-hint">スポットに写真を投稿します</p>
+          </div>
+          <img id="imagePreview" class="image-preview hidden" alt="プレビュー" />
+        </div>
+        <select id="spotSelect" class="spot-select">
+          <option value="">スポットを選択（必須）</option>
+        </select>
+        <button id="uploadBtn" class="btn-primary btn-block" disabled>写真を投稿する</button>
+        <div id="uploadStatus" class="upload-status hidden"></div>
+        <div id="latestCard" class="hidden"></div>
+      </div>
+
+      <!-- アルバムパネル -->
+      <div id="rpanel-album" class="rpanel">
+        <div id="albumGrid" class="album-grid">
+          <p class="empty-text">まだ文化カードがありません</p>
+        </div>
+      </div>
+
+      <!-- 登録パネル -->
+      <div id="rpanel-register" class="rpanel">
+        <div class="reg-intro">
+          <p class="reg-intro-title">スポットを登録する</p>
+          <p class="reg-intro-desc">あなたの地域の文化・歴史スポットをみんなに知らせましょう。人口が少ない地域ほど高ポイントが獲得できます。</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regName">スポット名</label>
+          <input type="text" id="regName" placeholder="例: 角の古民家カフェ" maxlength="100" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regDesc">説明</label>
+          <textarea id="regDesc" class="form-textarea" placeholder="このスポットの魅力や歴史を教えてください" rows="3" maxlength="300"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">文化カード（任意）</label>
+          <p class="form-hint">入力した内容が文化カードとして保存されます</p>
+          <div class="card-fields">
+            <label class="form-label-sm" for="cardTitle">カードタイトル</label>
+            <input type="text" id="cardTitle" placeholder="例: 江戸時代から続く老舗の風景" maxlength="100" />
+            <label class="form-label-sm" for="cardHistory">歴史的背景</label>
+            <textarea id="cardHistory" class="form-textarea" placeholder="このスポットの歴史的な背景を教えてください" rows="2" maxlength="300"></textarea>
+            <label class="form-label-sm" for="cardStory">物語</label>
+            <textarea id="cardStory" class="form-textarea" placeholder="このスポットにまつわる物語や伝承を教えてください" rows="2" maxlength="300"></textarea>
+            <label class="form-label-sm" for="cardCulturalConnection">文化とのつながり</label>
+            <textarea id="cardCulturalConnection" class="form-textarea" placeholder="地域文化との関係を教えてください" rows="2" maxlength="300"></textarea>
+            <label class="form-label-sm" for="cardQuestion">問い</label>
+            <input type="text" id="cardQuestion" placeholder="例: この場所が未来に伝えるべきことは？" maxlength="200" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regPop">地域の人口規模</label>
+          <select id="regPop" class="spot-select">
+            <option value="5000000">大都市・政令市（50万人以上）</option>
+            <option value="200000">地方都市（10万〜50万人）</option>
+            <option value="30000" selected>小都市（1万〜10万人）</option>
+            <option value="3000">町・村（1万人未満）</option>
+          </select>
+          <div class="pts-preview">
+            このスポットへの投稿で獲得できるポイント：<strong id="regPtsPreview">—</strong>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">位置情報</label>
+          <button type="button" id="gpsBtn" class="btn-secondary btn-block">現在地を取得する（GPS）</button>
+          <div class="coord-row">
+            <div class="coord-field">
+              <label class="form-label-sm">緯度</label>
+              <input type="number" id="regLat" placeholder="35.6812" step="0.0001" />
+            </div>
+            <div class="coord-field">
+              <label class="form-label-sm">経度</label>
+              <input type="number" id="regLng" placeholder="139.7671" step="0.0001" />
+            </div>
+          </div>
+        </div>
+
+        <button id="regSubmitBtn" class="btn-primary btn-block">スポットを登録する</button>
+        <div id="regStatus" class="upload-status hidden"></div>
+      </div>
+
+      <!-- ルートパネル -->
+      <div id="rpanel-route" class="rpanel">
+        <div class="panel-card">
+          <p class="panel-label">ルートを作る</p>
+          <p class="route-hint">スポットの「追加」ボタンでルートに追加</p>
+          <div id="routeSpots" class="route-spots">
+            <p class="empty-text">スポットが追加されていません</p>
+          </div>
+          <div class="route-save-row">
+            <input type="text" id="routeNameInput" placeholder="ルート名を入力..." class="route-name-input" />
+            <button id="saveRouteBtn" class="btn-secondary">保存</button>
+          </div>
+        </div>
+        <div class="panel-card">
+          <p class="panel-label">保存済みルート</p>
+          <div id="savedRouteList" class="saved-route-list">
+            <p class="empty-text">保存されたルートはありません</p>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- モバイル底部タブバー -->
+  <nav class="mobile-tabbar">
+    <button class="mtab active" data-mtab="map">
+      <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/>
+        <line x1="9" y1="3" x2="9" y2="18"/>
+        <line x1="15" y1="6" x2="15" y2="21"/>
+      </svg>
+      <span class="mtab-label">マップ</span>
+    </button>
+    <button class="mtab" data-mtab="spots">
+      <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+        <circle cx="12" cy="9" r="2.5"/>
+      </svg>
+      <span class="mtab-label">スポット</span>
+    </button>
+    <button class="mtab" data-mtab="upload">
+      <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      <span class="mtab-label">撮影</span>
+    </button>
+    <button class="mtab" data-mtab="album">
+      <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/>
+        <rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/>
+        <rect x="14" y="14" width="7" height="7" rx="1"/>
+      </svg>
+      <span class="mtab-label">アルバム</span>
+    </button>
+    <button class="mtab" data-mtab="register">
+      <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/>
+        <line x1="12" y1="8" x2="12" y2="16"/>
+        <line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+      <span class="mtab-label">登録</span>
+    </button>
+    <button class="mtab" data-mtab="route">
+      <svg class="mtab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="5" cy="17" r="2"/>
+        <circle cx="19" cy="7" r="2"/>
+        <path d="M5 15V9a4 4 0 0 1 4-4h6"/>
+        <path d="M19 9v8a2 2 0 0 1-2 2H8"/>
+      </svg>
+      <span class="mtab-label">ルート</span>
+    </button>
+  </nav>
+
+  <!-- 文化カード詳細モーダル -->
+  <div id="cardModal" class="modal hidden">
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-box">
+      <button class="modal-close" id="modalClose">&#215;</button>
+      <img id="modalImg" class="modal-image hidden" alt="スポット写真" />
+      <div id="modalCard"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
